@@ -1,0 +1,66 @@
+import random
+
+class IntegrityEfficiencyAgent:
+    def __init__(
+        self,
+        integrity_weight=0.8,        # probability of acting in alignment
+        initial_trust=1.0,
+        trust_decay=0.05,
+        trust_recovery=0.02,
+        contradiction_cost=5.0,      # energy cost of maintaining contradiction
+        coherence_cost=1.0           # baseline cost of coherent action
+    ):
+        self.integrity_weight = integrity_weight
+        self.trust = initial_trust
+        self.trust_decay = trust_decay
+        self.trust_recovery = trust_recovery
+        self.contradiction_cost = contradiction_cost
+        self.coherence_cost = coherence_cost
+
+        # Tracking system load
+        self.total_energy_spent = 0.0
+        self.total_actions = 0
+        self.contradictions = 0
+
+    def act(self, stated_intent=True):
+        """
+        Agent acts; system evaluates efficiency and trust impact
+        """
+
+        # Decide real behavior
+        action_aligned = random.random() < self.integrity_weight
+
+        # Determine contradiction
+        contradiction = stated_intent != action_aligned
+
+        # Energy accounting
+        if contradiction:
+            energy = self.contradiction_cost * (1 / max(self.trust, 0.01))
+            self.trust -= self.trust * self.trust_decay
+            self.contradictions += 1
+        else:
+            energy = self.coherence_cost
+            self.trust += (1 - self.trust) * self.trust_recovery
+
+        # Clamp trust
+        self.trust = max(0.0, min(1.0, self.trust))
+
+        # Update totals
+        self.total_energy_spent += energy
+        self.total_actions += 1
+
+        return {
+            "aligned": action_aligned,
+            "contradiction": contradiction,
+            "trust": round(self.trust, 3),
+            "energy_cost": round(energy, 3),
+            "avg_energy_per_action": round(self.total_energy_spent / self.total_actions, 3)
+        }
+
+    def system_efficiency(self):
+        """
+        Lower energy per action = higher efficiency
+        """
+        if self.total_actions == 0:
+            return 0
+        return round(1 / (self.total_energy_spent / self.total_actions), 3)
